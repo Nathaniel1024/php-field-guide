@@ -15,7 +15,7 @@ Start here
   │   ├─ Troubleshooting index (symptom -> fix)
   │   └─ API + app usage examples
   ├─ docs/
-  │   ├─ 01..05 deep-dive modules (production edge cases)
+  │   ├─ 01..10 deep-dive modules (production edge cases)
   │   └─ docs/README.md quick-run map
   ├─ public/
   │   ├─ runnable web demos (CRUD, upload, csv, oop, health)
