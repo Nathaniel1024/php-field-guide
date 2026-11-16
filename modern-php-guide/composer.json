@@ -1,0 +1,17 @@
+{
+  "name": "field-guide/modern-php-starter",
+  "description": "Modern PHP Field Guide & Starter Kit",
+  "type": "project",
+  "require": {
+    "php": ">=8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "src/"
+    }
+  },
+  "scripts": {
+    "serve": "php -S localhost:8000",
+    "lint": "find . -name '*.php' -print0 | xargs -0 -n1 php -l"
+  }
+}

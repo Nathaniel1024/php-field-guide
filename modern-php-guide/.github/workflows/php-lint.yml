@@ -1,0 +1,37 @@
+name: PHP Lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    name: PHP ${{ matrix.php-version }} lint
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3', '8.4']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+
+      - name: Run php -l on all PHP files
+        run: |
+          set -euo pipefail
+          mapfile -d '' files < <(find . -type f -name '*.php' -print0)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No PHP files found."
+            exit 0
+          fi
+
+          for file in "${files[@]}"; do
+            php -l "$file"
+          done
