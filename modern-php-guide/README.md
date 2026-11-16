@@ -196,7 +196,7 @@ flowchart TD
     S --> W[Dynamic SQL WHERE Builder\nallowlist filters]
     W --> P[PDO Prepared Statements]
     P --> D[(tasks table)]
-    D --> E[XSS Escape with e()/htmlspecialchars]
+    D --> E["XSS Escape with e() / htmlspecialchars()"]
     E --> H[HTML Table Response]
     H --> U
 ```
@@ -209,7 +209,7 @@ flowchart LR
     B --> C[Slow Work in Request Path]
     C --> D[Delayed Response]
 
-    B --> E[fastcgi_finish_request()\nflush response early]
+    B --> E["fastcgi_finish_request() flush response early"]
     E --> F[Queue Job in DB]
     F --> G[Cron/Supervisor starts bin/worker.php]
     G --> H[Background processing + done/failed status]

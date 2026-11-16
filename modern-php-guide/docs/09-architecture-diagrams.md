@@ -15,7 +15,7 @@ flowchart TD
     W --> P[PDO Prepared Statement\nERRMODE_EXCEPTION + FETCH_ASSOC]
     P --> D[(SQLite/MySQL tasks table)]
     D --> R[Rows fetched]
-    R --> E[XSS Escape with e()/htmlspecialchars]
+    R --> E["XSS Escape with e() / htmlspecialchars()"]
     E --> H[Render HTML table\nresponsive + mobile scroll]
     H --> U
 
@@ -42,7 +42,7 @@ flowchart LR
         B2 --> B3[Persist Job in DB\nstatus=queued]
         B3 --> B4[Immediate HTTP 200/202]
 
-        B2 --> B5[fastcgi_finish_request()\nflush response now]
+        B2 --> B5["fastcgi_finish_request() flush response now"]
         B5 --> B6[Optional tail work or spawn worker]
 
         C1[Cron / Supervisor] --> C2[bin/worker.php]
