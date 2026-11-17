@@ -199,6 +199,72 @@ Topics:
 
 ---
 
+## 11) Relational Joins and HTML
+
+Guide:
+- `docs/11-relational-joins-and-html.md`
+
+Topics:
+- Foreign key design for `users`, `categories`, `tasks` with `RESTRICT`/`CASCADE`
+- `INNER JOIN` vs `LEFT JOIN` with safe column aliasing for `PDO::FETCH_ASSOC`
+- Aggregations for dashboard cards and dynamic dropdown counts
+- N+1 anti-patterns and single-query solutions with `GROUP_CONCAT` or PHP grouping
+
+Quick run examples:
+
+```bash
+php -S localhost:8000
+```
+
+Then open:
+- `http://localhost:8000/public/joins_demo.php?join=left`
+- `http://localhost:8000/public/joins_demo.php?join=inner`
+- `http://localhost:8000/public/category_totals_demo.php`
+- `http://localhost:8000/public/n_plus_one_solution_group_concat.php`
+- `http://localhost:8000/public/n_plus_one_solution_php_grouping.php`
+
+---
+
+## 12) Email and Structured Logging
+
+Guide:
+- `docs/12-email-and-structured-logging.md`
+
+Topics:
+- Why `mail()` often fails in production and when to use SMTP/API providers
+- PHPMailer SMTP helper with `.env` credentials, HTML/text bodies, and attachments
+- Zero-dependency HTTP email API calls (Resend/Postmark/Mailgun-style) using cURL
+- PSR-3-inspired structured logger with daily rotating `storage/logs/app-YYYY-MM-DD.log`
+- `audit_logs` table pattern for immutable CRUD audit trails
+
+Quick run examples:
+
+```bash
+composer require phpmailer/phpmailer
+mkdir -p storage/logs
+php -r "echo 'log path: '.getcwd().'/storage/logs/app-'.gmdate('Y-m-d').'.log'.PHP_EOL;"
+```
+
+Then:
+- Create `.env` from the guide and fill SMTP/API credentials.
+- Run a small send script using the SMTP/API helper snippets in module 12.
+- Open the daily log file in `storage/logs/` and confirm JSON log lines were written.
+
+---
+
+## 13) Launch Readiness and Deployment
+
+Guide:
+- `docs/13-launch-readiness-and-deployment.md`
+
+Topics:
+- Final consistency checks for normalized `categories` + `tasks.category_id`
+- Local boot modes (`php -S localhost:8000 -t public` and legacy root mode)
+- Optional `docker-compose.yml` template for local containerized boot
+- Production readiness checklist and launch smoke tests
+
+---
+
 ## Suggested workflow
 1. Read module markdown.
 2. Copy snippet into a dedicated `public/*_demo.php` file.

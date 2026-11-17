@@ -71,9 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endforeach; ?>
         </select>
 
-        <input name="query" placeholder="Optional query string (e.g. status=pending&category=office)">
+        <input name="query" placeholder="Optional query string (e.g. status=pending&category_id=2)">
 
-        <textarea name="payload" placeholder='JSON payload for POST/PUT/DELETE, e.g. {"title":"New Task"}'></textarea>
+        <textarea name="payload" placeholder='JSON payload for POST/PUT/DELETE, e.g. {"title":"New Task","description":"...","category_id":2,"status":"pending"}'></textarea>
 
         <button type="submit">Send Request</button>
     </form>

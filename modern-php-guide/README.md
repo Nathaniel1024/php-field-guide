@@ -15,7 +15,7 @@ Start here
   │   ├─ Troubleshooting index (symptom -> fix)
   │   └─ API + app usage examples
   ├─ docs/
-  │   ├─ 01..10 deep-dive modules (production edge cases)
+  │   ├─ 01..13 deep-dive modules (production edge cases)
   │   └─ docs/README.md quick-run map
   ├─ public/
   │   ├─ runnable web demos (CRUD, upload, csv, oop, health)
@@ -24,6 +24,8 @@ Start here
   │   └─ framework-free REST endpoints
   ├─ playground/
   │   └─ CLI scripts for instant terminal experimentation
+  ├─ docker-compose.yml
+  │   └─ optional local container boot
   └─ deploy/
       └─ server preflight checklist script
 ```
@@ -36,6 +38,9 @@ Start here
 - [Deep-Dive Docs](#3-deep-dive-docs)
 - [07 - CLI Scripts and Cron](./docs/07-cli-scripts-and-cron.md)
 - [08 - Sync and Async PHP](./docs/08-sync-and-async-php.md)
+- [11 - Relational Joins and HTML](./docs/11-relational-joins-and-html.md)
+- [12 - Email and Structured Logging](./docs/12-email-and-structured-logging.md)
+- [13 - Launch Readiness and Deployment](./docs/13-launch-readiness-and-deployment.md)
 - [Playground (CLI Practice Scripts)](#4-playground-cli-practice-scripts)
 - [Master Cheatsheet (Copy/Paste)](#5-master-cheatsheet-copypaste)
 - [Feature Walkthrough](#6-feature-walkthrough)
@@ -73,9 +78,17 @@ Start here
   - [`./public/login_demo.php`](./public/login_demo.php)
   - [`./public/health.php`](./public/health.php)
   - [`./public/oop_demo.php`](./public/oop_demo.php)
+  - Module 11 demos (create from guide snippets):
+    - `./public/joins_demo.php?join=left`
+    - `./public/joins_demo.php?join=inner`
+    - `./public/category_totals_demo.php`
+    - `./public/n_plus_one_solution_group_concat.php`
+    - `./public/n_plus_one_solution_php_grouping.php`
 - API endpoints (`api/`):
   - [`./api/tasks.php`](./api/tasks.php)
   - [`./api/gateway.php`](./api/gateway.php)
+  - [`./public/api/tasks.php`](./public/api/tasks.php) *(public web-root shim)*
+  - [`./public/api/gateway.php`](./public/api/gateway.php) *(public web-root shim)*
 - Build-focused docs:
   - [`./docs/03-api-auth-and-hardening.md`](./docs/03-api-auth-and-hardening.md)
   - [`./docs/05-production-checklist.md`](./docs/05-production-checklist.md)
@@ -87,6 +100,9 @@ Start here
   - [`./docs/07-cli-scripts-and-cron.md`](./docs/07-cli-scripts-and-cron.md)
   - [`./docs/08-sync-and-async-php.md`](./docs/08-sync-and-async-php.md)
   - [`./docs/09-architecture-diagrams.md`](./docs/09-architecture-diagrams.md)
+  - [`./docs/11-relational-joins-and-html.md`](./docs/11-relational-joins-and-html.md)
+  - [`./docs/12-email-and-structured-logging.md`](./docs/12-email-and-structured-logging.md)
+  - [`./docs/13-launch-readiness-and-deployment.md`](./docs/13-launch-readiness-and-deployment.md)
 - CLI scripts directory (`bin/`):
   - [`./bin/README.md`](./bin/README.md)
 - Test directory (`tests/`):
@@ -104,18 +120,26 @@ Start here
 cd modern-php-guide
 php -r "new PDO('sqlite:database.sqlite');"
 php -r "\$pdo=new PDO('sqlite:database.sqlite');\$sql=file_get_contents('schema.sql');\$pdo->exec(\$sql); echo 'Schema loaded'.PHP_EOL;"
-php -S localhost:8000
+php -S localhost:8000 -t public
+```
+
+Or with Docker Compose:
+
+```bash
+cd modern-php-guide
+docker compose up --build
 ```
 
 Open:
-- `http://localhost:8000/public/index.php`
-- `http://localhost:8000/public/api_demo.php`
+- `http://localhost:8000/index.php`
+- `http://localhost:8000/api_demo.php`
 
 ## 2) Repository Layout
 
 ```text
 modern-php-guide/
 ├── composer.json
+├── docker-compose.yml
 ├── README.md
 ├── schema.sql
 ├── config/
@@ -133,7 +157,10 @@ modern-php-guide/
 │   ├── 07-cli-scripts-and-cron.md
 │   ├── 08-sync-and-async-php.md
 │   ├── 09-architecture-diagrams.md
-│   └── 10-code-review-challenges.md
+│   ├── 10-code-review-challenges.md
+│   ├── 11-relational-joins-and-html.md
+│   ├── 12-email-and-structured-logging.md
+│   └── 13-launch-readiness-and-deployment.md
 ├── playground/
 │   ├── 01-arrays-and-strings.php
 │   ├── 02-dates-and-money.php
@@ -161,7 +188,10 @@ modern-php-guide/
 │   ├── import_tasks_csv.php
 │   ├── login_demo.php
 │   ├── health.php
-│   └── oop_demo.php
+│   ├── oop_demo.php
+│   └── api/
+│       ├── gateway.php
+│       └── tasks.php
 ├── deploy/
 │   └── checklist.sh
 ├── tests/
@@ -184,6 +214,9 @@ modern-php-guide/
 - [08 - Sync and Async PHP](./docs/08-sync-and-async-php.md)
 - [09 - Architecture Diagrams](./docs/09-architecture-diagrams.md)
 - [10 - Code Review Challenges](./docs/10-code-review-challenges.md)
+- [11 - Relational Joins and HTML](./docs/11-relational-joins-and-html.md)
+- [12 - Email and Structured Logging](./docs/12-email-and-structured-logging.md)
+- [13 - Launch Readiness and Deployment](./docs/13-launch-readiness-and-deployment.md)
 
 ### Architecture Diagram Previews
 
@@ -383,14 +416,14 @@ echo json_encode(['message' => 'created'], JSON_PRETTY_PRINT);
 
 ### GET
 ```bash
-curl "http://localhost:8000/api/tasks.php?status=pending&category=office"
+curl "http://localhost:8000/api/tasks.php?status=pending&category_id=2"
 ```
 
 ### POST
 ```bash
 curl -X POST http://localhost:8000/api/tasks.php \
   -H "Content-Type: application/json" \
-  -d '{"title":"Audit UPS Units","description":"Check battery health","category":"it","quantity":2,"status":"pending","due_date":"2026-12-01","priority":4}'
+  -d '{"title":"Audit UPS Units","description":"Check battery health","category_id":2,"quantity":2,"status":"pending","due_date":"2026-12-01","priority":4}'
 ```
 
 ### PUT

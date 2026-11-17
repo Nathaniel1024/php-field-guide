@@ -40,10 +40,10 @@ function validate_payload(array $payload, bool $partial = false): array
         }
     }
 
-    if (!$partial || array_key_exists('category', $payload)) {
-        $category = trim((string) ($payload['category'] ?? ''));
-        if ($category === '' || mb_strlen($category) > 50) {
-            $errors[] = 'category is required and <= 50 chars';
+    if (!$partial || array_key_exists('category_id', $payload)) {
+        $categoryId = (int) ($payload['category_id'] ?? 0);
+        if ($categoryId <= 0) {
+            $errors[] = 'category_id is required and must be a positive integer';
         }
     }
 
@@ -71,26 +71,37 @@ function validate_payload(array $payload, bool $partial = false): array
     return $errors;
 }
 
+function category_exists(PDO $pdo, int $categoryId): bool
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM categories WHERE id = :id');
+    $stmt->execute(['id' => $categoryId]);
+
+    return (int) $stmt->fetchColumn() > 0;
+}
+
 try {
     switch ($method) {
         case 'GET':
             $filters = [
                 'q' => $_GET['q'] ?? '',
-                'category' => $_GET['category'] ?? '',
+                'category_id' => $_GET['category_id'] ?? '',
                 'status' => $_GET['status'] ?? '',
                 'date_from' => $_GET['date_from'] ?? '',
                 'date_to' => $_GET['date_to'] ?? '',
             ];
 
             $where = build_where_clause($filters, [
-                'q' => 'title',
-                'category' => 'category',
-                'status' => 'status',
-                'date_from' => 'due_date',
-                'date_to' => 'due_date',
+                'q' => 'tasks.title',
+                'category_id' => 'tasks.category_id',
+                'status' => 'tasks.status',
+                'date_from' => 'tasks.due_date',
+                'date_to' => 'tasks.due_date',
             ]);
 
-            $stmt = $pdo->prepare('SELECT * FROM tasks' . $where['sql'] . ' ORDER BY id DESC');
+            $stmt = $pdo->prepare('SELECT tasks.*, categories.name AS category_name
+                                   FROM tasks
+                                   LEFT JOIN categories ON categories.id = tasks.category_id'
+                                   . $where['sql'] . ' ORDER BY tasks.id DESC');
             $stmt->execute($where['params']);
             $rows = $stmt->fetchAll();
 
@@ -107,12 +118,19 @@ try {
                 break;
             }
 
-            $stmt = $pdo->prepare('INSERT INTO tasks (title, description, category, quantity, status, due_date, priority)
-                                   VALUES (:title, :description, :category, :quantity, :status, :due_date, :priority)');
+            $categoryId = (int) $payload['category_id'];
+            if (!category_exists($pdo, $categoryId)) {
+                http_response_code(422);
+                echo json_encode(['errors' => ['category_id does not exist']], JSON_PRETTY_PRINT);
+                break;
+            }
+
+            $stmt = $pdo->prepare('INSERT INTO tasks (title, description, category_id, quantity, status, due_date, priority)
+                                   VALUES (:title, :description, :category_id, :quantity, :status, :due_date, :priority)');
             $stmt->execute([
                 'title' => trim((string) $payload['title']),
                 'description' => trim((string) $payload['description']),
-                'category' => trim((string) $payload['category']),
+                'category_id' => $categoryId,
                 'quantity' => (int) ($payload['quantity'] ?? 0),
                 'status' => (string) $payload['status'],
                 'due_date' => ($payload['due_date'] ?? '') !== '' ? (string) $payload['due_date'] : null,
@@ -140,17 +158,27 @@ try {
                 break;
             }
 
+            if (array_key_exists('category_id', $payload)) {
+                $categoryId = (int) $payload['category_id'];
+                if (!category_exists($pdo, $categoryId)) {
+                    http_response_code(422);
+                    echo json_encode(['errors' => ['category_id does not exist']], JSON_PRETTY_PRINT);
+                    break;
+                }
+            }
+
             $updates = [];
             $params = ['id' => $id];
 
-            foreach (['title', 'description', 'category', 'quantity', 'status', 'due_date', 'priority'] as $field) {
+            foreach (['title', 'description', 'category_id', 'quantity', 'status', 'due_date', 'priority'] as $field) {
                 if (!array_key_exists($field, $payload)) {
                     continue;
                 }
 
                 $updates[] = $field . ' = :' . $field;
                 $params[$field] = match ($field) {
-                    'title', 'description', 'category', 'status', 'due_date' => ($payload[$field] === '' ? null : (string) $payload[$field]),
+                    'title', 'description', 'status', 'due_date' => ($payload[$field] === '' ? null : (string) $payload[$field]),
+                    'category_id',
                     'quantity', 'priority' => (int) $payload[$field],
                     default => $payload[$field],
                 };

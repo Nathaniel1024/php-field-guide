@@ -17,7 +17,7 @@ $filters = [
 
 $allowed = [
     'q' => 'title',
-    'category' => 'category',
+    'category' => 'tasks.category_id',
     'status' => 'status',
     'date_from' => 'due_date',
     'date_to' => 'due_date',
@@ -25,13 +25,25 @@ $allowed = [
 
 $where = build_where_clause($filters, $allowed);
 
-$sql = 'SELECT id, title, description, category, quantity, status, due_date, priority, created_at
-        FROM tasks' . $where['sql'] . ' ORDER BY priority DESC, due_date ASC';
+$sql = 'SELECT
+            tasks.id,
+            tasks.title,
+            tasks.description,
+            tasks.category_id,
+            categories.name AS category_name,
+            tasks.quantity,
+            tasks.status,
+            tasks.due_date,
+            tasks.priority,
+            tasks.created_at
+        FROM tasks
+        LEFT JOIN categories ON tasks.category_id = categories.id'
+        . $where['sql'] . ' ORDER BY tasks.priority DESC, tasks.due_date ASC';
 $stmt = $pdo->prepare($sql);
 $stmt->execute($where['params']);
 $tasks = $stmt->fetchAll();
 
-$catStmt = $pdo->prepare('SELECT DISTINCT category FROM tasks ORDER BY category ASC');
+$catStmt = $pdo->prepare('SELECT id, name FROM categories ORDER BY name ASC');
 $catStmt->execute();
 $categories = $catStmt->fetchAll();
 
@@ -57,8 +69,8 @@ if ($error !== null) {
         <select name="category">
             <option value="">All categories</option>
             <?php foreach ($categories as $row): ?>
-                <option value="<?= e((string) $row['category']) ?>" <?= ($filters['category'] === $row['category']) ? 'selected' : '' ?>>
-                    <?= e((string) $row['category']) ?>
+                <option value="<?= (int) $row['id'] ?>" <?= ((string) $filters['category'] === (string) $row['id']) ? 'selected' : '' ?>>
+                    <?= e((string) $row['name']) ?>
                 </option>
             <?php endforeach; ?>
         </select>
@@ -104,7 +116,7 @@ if ($error !== null) {
                         <strong><?= e((string) $task['title']) ?></strong><br>
                         <span class="muted"><?= e((string) $task['description']) ?></span>
                     </td>
-                    <td><?= e((string) $task['category']) ?></td>
+                    <td><?= e((string) ($task['category_name'] ?? 'Uncategorized')) ?></td>
                     <td><?= (int) $task['quantity'] ?></td>
                     <td><span class="pill"><?= e((string) $task['status']) ?></span></td>
                     <td><?= e((string) ($task['due_date'] ?? '-')) ?></td>

@@ -6,13 +6,16 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/security.php';
 
 $pdo = db();
+$catStmt = $pdo->prepare('SELECT id, name FROM categories ORDER BY name ASC');
+$catStmt->execute();
+$categories = $catStmt->fetchAll();
 
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim((string) ($_POST['title'] ?? ''));
     $description = trim((string) ($_POST['description'] ?? ''));
-    $category = trim((string) ($_POST['category'] ?? ''));
+    $categoryId = (int) ($_POST['category_id'] ?? 0);
     $quantity = (int) ($_POST['quantity'] ?? 0);
     $status = trim((string) ($_POST['status'] ?? 'pending'));
     $dueDate = trim((string) ($_POST['due_date'] ?? ''));
@@ -30,8 +33,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($description === '') {
         $errors[] = 'Description is required.';
     }
-    if ($category === '' || mb_strlen($category) > 50) {
-        $errors[] = 'Category is required and must be <= 50 characters.';
+    if ($categoryId <= 0) {
+        $errors[] = 'Category is required.';
+    }
+    if ($categoryId > 0) {
+        $categoryExistsStmt = $pdo->prepare('SELECT COUNT(*) FROM categories WHERE id = :id');
+        $categoryExistsStmt->execute(['id' => $categoryId]);
+        if ((int) $categoryExistsStmt->fetchColumn() === 0) {
+            $errors[] = 'Selected category does not exist.';
+        }
     }
     if (!in_array($status, ['pending', 'in_progress', 'done'], true)) {
         $errors[] = 'Invalid status selected.';
@@ -47,12 +57,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($errors === []) {
-        $stmt = $pdo->prepare('INSERT INTO tasks (title, description, category, quantity, status, due_date, priority)
-                               VALUES (:title, :description, :category, :quantity, :status, :due_date, :priority)');
+        $stmt = $pdo->prepare('INSERT INTO tasks (title, description, category_id, quantity, status, due_date, priority)
+                               VALUES (:title, :description, :category_id, :quantity, :status, :due_date, :priority)');
         $stmt->execute([
             'title' => $title,
             'description' => $description,
-            'category' => $category,
+            'category_id' => $categoryId,
             'quantity' => $quantity,
             'status' => $status,
             'due_date' => $dueDate !== '' ? $dueDate : null,
@@ -78,7 +88,14 @@ require __DIR__ . '/../includes/header.php';
         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
         <input name="title" placeholder="Title" required maxlength="150" value="<?= e((string) old('title')) ?>">
-        <input name="category" placeholder="Category" required maxlength="50" value="<?= e((string) old('category')) ?>">
+        <select name="category_id" required>
+            <option value="">Select category</option>
+            <?php foreach ($categories as $category): ?>
+                <option value="<?= (int) $category['id'] ?>" <?= (string) old('category_id') === (string) $category['id'] ? 'selected' : '' ?>>
+                    <?= e((string) $category['name']) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
         <input name="quantity" type="number" min="0" value="<?= e((string) old('quantity', '1')) ?>">
 
         <select name="status">

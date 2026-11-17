@@ -1,0 +1,12 @@
+services:
+  app:
+    image: php:8.2-cli
+    working_dir: /app
+    volumes:
+      - ./:/app
+    ports:
+      - "8000:8000"
+    command: >
+      sh -lc "php -r 'new PDO(\"sqlite:database.sqlite\");'
+      && php -r '\$pdo=new PDO(\"sqlite:database.sqlite\");\$pdo->exec(file_get_contents(\"schema.sql\")); echo \"Schema loaded\\n\";'
+      && php -S 0.0.0.0:8000 -t public"
